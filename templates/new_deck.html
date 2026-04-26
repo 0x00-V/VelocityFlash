@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Create{% endblock %}
+{% block content %}
+<style>
+    .deck_title input {
+        width: 150px;
+    }
+    .card_container {
+        display: flex;
+        gap: 10px;
+    }
+    .card_container textarea,p {
+        flex: 1;
+        min-width: 0;
+    }
+    .card_container textarea {
+        resize: none; 
+        height: 150px; 
+        width: 300px;
+    }
+</style>
+<div class="dashboard-main">
+    <form method="post">
+        <div class="deck_title">
+             <p><label for="deck_name">Deck Name</label></p>
+             <p><input type="text" name="title" placeholder='e.g. "Computer Science"'><p>
+        </div>
+        <div class="new_card">
+            <p>Card 1</p>
+            <div class="card_container">
+                <p>Front</p>
+                <p>Back</p>
+            </div>
+            <div class="card_container">
+                <textarea name="front"></textarea>
+                <textarea name="back"></textarea>
+            </div>
+            <p><input type="submit" value="Create Deck"></p>
+        </div>
+    </form>
+         {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <p style="color: red;">{{ messages[0] }}</p>
+        {% endif %}
+        {% endwith %}
+</div>
+{% endblock %}

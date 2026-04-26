@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %} | VelocityFlash</title>
+</head>
+<body>
+    <style>
+        .topnav {
+            background-color: #333;
+            overflow: hidden;
+        }
+        .topnav a {
+            float: left;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+        .topnav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        .topnav a.nv-left {
+            float: right;
+            background-color: #04AA6D;
+            color: white;
+        }
+    </style>
+    {% if session.get('email') != None %}
+    
+    <div class="topnav">
+        <a href="{{url_for('index')}}">LOGO HERE</a>
+        <a href="{{url_for('dashboard')}}">Dashboard</a>
+        <a href="#" class="nv-left">Settings</a>
+        <a href="{{url_for('logout')}}" class="nv-left">Logout</a>
+    </div>
+    {% else %}
+    <div class="topnav">
+        <a href="#">LOGO HERE</a>
+        <a href="{{url_for('login')}}" class="nv-left">Login</a>
+        <a href="{{url_for('register')}}" class="nv-left">Register</a>
+    </div>
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+    
+    <div id="footer">
+        {% block footer %}© 2026 VelocityFlash{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+    .deck_title input {
+        width: 150px;
+    }
+    .card_container {
+        display: flex;
+        gap: 10px;
+    }
+    .card_container textarea,p {
+        flex: 1;
+        min-width: 0;
+    }
+    .card_container textarea {
+        resize: none; 
+        height: 150px; 
+        width: 300px;
+    }
+</style>
+<div class="dashboard-main">
+    {% if not template_deck %}
+        <h1>There was an error retreiving deck information.<h1>
+        <p>Click <a href="{{url_for('dashboard')}}">here</a> to go back.</p>
+    {% else %}
+        <h1>{{template_deck["deck_title"]}}</h1>
+        <form method="post">
+            <div class="deck_title">
+                <p><label for="deck_name">Deck Name</label></p>
+                <p><input type="text" name="title" placeholder="{{template_deck['deck_title']}}"></p>
+            </div>
+            <div class="card">
+                {% for key, list_value in template_deck["cards"].items()%}
+                    <input type="hidden" name="card_id" value="{{key}}">         
+                    <div class="card_container">
+                        <p>Front</p>
+                        <p>Back</p>
+                    </div>
+                    <div class="card_container">
+                        <textarea name="front">{{list_value[0]}}</textarea>
+                        <textarea name="back">{{list_value[1]}}</textarea>
+                    </div>
+                {% endfor %}
+               
+            </div>
+            <button id="new_card" type="button">New Card</button>
+            <p><input type="submit" value="Save Changes"></p>
+        </form>
+    {% endif %}
+         {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <p>{{ messages[0] }}</p>
+        {% endif %}
+        {% endwith %}
+</div>
+<script>
+    let new_cards = 1;
+    function cardBuilder(card){
+        const currentId = `new_card_${new_cards}`;
+        const card_container_1 = document.createElement('div');
+        const card_container_2 = document.createElement('div');
+        card_container_1.setAttribute('class', 'card_container');
+        card_container_1.setAttribute('id', currentId);
+        card_container_2.setAttribute('class', 'card_container');
+        card_container_2.setAttribute('id', currentId);
+        const front = document.createElement('p');
+        front.textContent = "Front";
+        const back = document.createElement('p');
+        back.textContent = "Back";
+        const front_textarea = document.createElement('textarea');
+        front_textarea.setAttribute('name', `front_new_${new_cards}`);
+        const back_textarea = document.createElement('textarea');
+        back_textarea.setAttribute('name', `back_new_${new_cards}`);
+        const delete_btn = document.createElement('button');
+        delete_btn.setAttribute('type', 'button');
+        delete_btn.textContent = "Delete Card";
+        delete_btn.addEventListener("click", function () {
+            const containers = document.querySelectorAll(`[id="${currentId}"]`);
+            containers.forEach(container => {
+                container.innerHTML = '';
+                container.remove();
+            });
+            delete_btn.remove();
+        });
+        new_cards += 1;
+        card_container_1.appendChild(front);
+        card_container_1.appendChild(back);
+        card_container_2.appendChild(front_textarea);
+        card_container_2.appendChild(back_textarea);
+        card.appendChild(card_container_1);
+        card.appendChild(card_container_2);
+        card.appendChild(delete_btn);
+    }
+    const button = document.getElementById("new_card");
+    const card = document.querySelector(".card");
+    button.addEventListener("click", function() {
+        cardBuilder(card);
+    });
+</script>
+{% endblock %}

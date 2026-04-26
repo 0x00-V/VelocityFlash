@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Flashcards{% endblock %}
+{% block content %}
+
+<style>
+    .slide-wrapper{
+        margin-top: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    .slides-container{
+      padding-top: 5px;
+        display: flex;
+        overflow-x: hidden;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        transform-style: preserve-3d;
+    }
+    .slide{
+        flex: 0 0 100%;
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        transform-style: preserve-3d;
+    }
+  
+    .card {
+      width: 100%;
+      height: 300px;
+      margin: 25px;
+      perspective: 1000px;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: grey;
+      border-radius: 8px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+    </style>
+<div class="dashboard-main">
+    <section class="slide-wrapper">
+        
+        <ul class="slides-container" id="slides-container">
+        {% for card in template_cards.items()%}
+        <li class="slide">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-front">
+                {{card[1][0]}}
+              </div>
+              <div class="card-back">
+                {{card[1][1]}}
+              </div>
+            </div>
+          </div>
+        </li>
+        {% endfor %}
+        </ul>
+        <button id="slide-arrow-prev">‹</button>
+        <button id="slide-arrow-next">›</button>
+    </section>
+  </div>
+
+<script>
+    const slidesContainer = document.getElementById("slides-container");
+    const slide = document.querySelector(".slide");
+    const prevButton = document.getElementById("slide-arrow-prev");
+    const nextButton = document.getElementById("slide-arrow-next");
+
+    nextButton.addEventListener("click", () => {
+        const slideWidth = slide.clientWidth;
+        slidesContainer.scrollLeft += slideWidth;
+    });
+    prevButton.addEventListener("click", () => {
+        const slideWidth = slide.clientWidth;
+        slidesContainer.scrollLeft -= slideWidth;
+    });
+  
+    const cards = document.querySelectorAll(".card");
+    cards.forEach(card => {
+      card.addEventListener("click", () => {
+        card.classList.toggle("flipped");
+      });
+    })
+   </script>
+{% endblock %}
