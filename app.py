@@ -2,6 +2,18 @@ from flask import Flask, redirect, url_for, request, session, render_template, f
 from databaseOperations import *
 from wtforms.validators import ValidationError
 
+import re
+
+
+def email_check(email_address):
+    pattern = r"""
+        (?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*
+        |"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\[\x01-\x09\x0b\x0c\x0e-\x7f])*")
+        @
+        (?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?
+        |\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\[\x01-\x09\x0b\x0c\x0e-\x7f])+)])
+    """
+    return bool(re.match(pattern, email_address, re.VERBOSE)) 
 
 
 app = Flask(__name__)
@@ -15,8 +27,6 @@ def index():
     return render_template('index.html', session=session)
 
 
-
-
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if session.get('email') != None:
@@ -26,8 +36,11 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        if not email or not password:
+        print(email_check(email))
+        if email.replace(" ", "") == "" or password.replace(" ", "") == "":
             error = "Fill in all fields."
+        elif email_check(email) == False:
+            error = "Enter a valid email"
         else:
             UserLogin = db.UserLogin(email, password)
             if UserLogin['Success'] == True:
@@ -47,19 +60,60 @@ def register():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        RegisterUser = db.RegisterUser(email, password)
-        if RegisterUser["Success"] == True:
-            flash('Account Created!')
-            return redirect(url_for('login'))
+        if email.replace(" ", "") == "" or password.replace(" ", "") == "":
+            error = "Fill in all fields."
+        elif email_check(email) == False:
+            error = "Enter a valid email"
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters."
         else:
-            error = RegisterUser['Error']
+            RegisterUser = db.RegisterUser(email, password)
+            if RegisterUser["Success"] == True:
+                flash('Account Created!')
+                return redirect(url_for('login'))
+            else:
+                error = RegisterUser['Error']
     return render_template('register.html', session=session, error=error)
+
 
 @app.route("/logout", methods=['GET', 'POST'])
 def logout():
     if session.get('email') != None:
         session.clear()
     return redirect(url_for('login'))
+
+
+@app.route("/settings", methods=['GET'])
+def settings():
+    if session.get('email') == None:
+        return redirect(url_for('login'))
+    return render_template('settings.html', session=session)
+
+
+@app.route("/settings/update_password", methods=['GET', 'POST'])
+def change_password():
+    if session.get('email') == None:
+        return redirect(url_for('login'))
+    error = None
+    if request.method == 'POST':
+        db = DatabaseOperations()
+        old_pass = request.form.get('old_pass')
+        new_pass = request.form.get('new_pass1')
+        new_pass1 = request.form.get('new_pass2')
+        if old_pass.replace(" ", "") == "" or new_pass.replace(" ", "") == "" or new_pass1.replace(" ", "") == "":
+           error = "Fill in all forms."
+        elif len(new_pass) < 6:
+            error = "New password must be at least 6 characters"
+        elif new_pass != new_pass1:
+            error = "Passwords do not match."
+        else:
+            response = db.UpdatePassword(session.get('email'), old_pass, new_pass)
+            if response["Success"] == True:
+                session.clear()
+                return redirect(url_for('login')) 
+            else:
+                error = "Old password was incorrect."      
+    return render_template('change_password.html', session=session, error=error)
 
 
 @app.route("/dashboard")
@@ -72,6 +126,7 @@ def dashboard():
         print(f"{key} - {value}")
         
     return render_template('dashboard.html', session=session, template_decks=decks)
+
 
 @app.route('/new_deck', methods=['GET', 'POST'])
 def new_deck():
@@ -91,20 +146,22 @@ def new_deck():
         return redirect(url_for('login'))
     return render_template('new_deck.html', session=session)
 
+
 @app.route('/decks/<int:deck_id>')    
 def decks(deck_id):
     if session.get('email') == None:
         return redirect(url_for('login'))
     return redirect(url_for('dashboard'))
 
+
 @app.route('/deck/<int:deck_id>')
 def deck(deck_id):
     if session.get('email') == None:
         return redirect(url_for('login'))
     db = DatabaseOperations()
-    cards = db.GetCards(session.get('email'), deck_id)
-    
+    cards = db.GetCards(session.get('email'), deck_id)    
     return render_template('deck_page.html', session=session, template_cards=cards)
+
 
 @app.route('/edit_deck/<int:deck_id>', methods=['GET', 'POST'])
 def edit_deck(deck_id):
@@ -112,13 +169,17 @@ def edit_deck(deck_id):
         return redirect(url_for('login'))
     db = DatabaseOperations()
     deck_content = db.DeckView(session.get('email'), deck_id)
+    print(deck_content)
     if request.method == 'POST':
         for k,v in request.form.items():
+            if k == "title":
+                if v.replace(" ", "") == "":
+                    print("THROW ERROR HERE (Edit_DECK)")
             if "front_new" in k or "back_new" in k:
                 if v.replace(" ", "") == "":
                     print("THROW ERROR HERE (Edit_DECK")
         db.EditDeck(session.get('email'), request.form, deck_id)
-        return render_template('edit_deck_page.html', session=session, template_deck=deck_content)
+        return redirect(url_for('edit_deck', deck_id=deck_id))
     return render_template('edit_deck_page.html', session=session, template_deck=deck_content)
 
 
@@ -131,6 +192,5 @@ Tidy this up and tighten logic before continuing
 
 Delete individial cards
 Delete decks
-account input validation - email validation, password req
-account page - reset password, change email, 
+account page - change email, 
 """

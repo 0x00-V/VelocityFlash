@@ -1,0 +1,11 @@
+
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="dashboard-main">
+   <h1>Settings</h1>
+   <p>Email: {{session.get('email')}}</p>
+   <a><button>Update Email</button></a>
+   <a href="{{url_for('change_password')}}"><button>Change Password</button></a>
+</div>
+{% endblock %}

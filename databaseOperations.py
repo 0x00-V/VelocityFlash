@@ -46,6 +46,23 @@ class DatabaseOperations:
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
         
+
+    def UpdatePassword(self, email, old_pass, new_pass):
+        try:
+            query = '''SELECT * FROM users WHERE email = ?'''
+            self.cur.execute(query, (email,))
+            result = self.cur.fetchone()
+            if result:
+                if check_password_hash(result["password"], old_pass):
+                    password_hashed = generate_password_hash(new_pass)
+                    query = "UPDATE users SET password = ? WHERE email = ?"
+                    self.cur.execute(query, (password_hashed, email,))
+                    self.con.commit()
+                    return {"Success": True}
+            return {"Success": False, "Error": "Incorrect Password."}
+        except sqlite3.OperationalError as error:
+            return {"Success": False, "Error": error}
+        
     def NewDeck(self, email, title, front, back):
         try:
             get_userid_query = 'SELECT id FROM users WHERE email = ?'
@@ -168,12 +185,16 @@ class DatabaseOperations:
                 return {"Success": False, "Error": "Couldn't locate deck"}
             deck_title = result["title"]
 
+            new_title_query = "UPDATE decks SET title = ? WHERE id = ?"
             new_card_query = "INSERT INTO cards (deck_id, front, back) VALUES (?, ?, ?)"
-
+            
             items = list(updated_deck.items())
             for i, (k, v) in enumerate(items):
                 if k == "title":
-                    print("update title")
+                    if v != deck_title:
+                        if v.replace(" ", "") != "":
+                            self.cur.execute(new_title_query, (v, deck_id))
+                            self.con.commit()            
                 if "front_new" in k:
                     if i < len(items) - 1:
                         next_k, next_v = items[i+1]
@@ -192,5 +213,3 @@ def ComparePassword(hashed_password, password):
 
 
 db = DatabaseOperations()
-#db.RegisterUser("bob", "1234")
-#print(db.UserLogin("bob", "12345"))
