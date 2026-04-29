@@ -2,7 +2,6 @@ import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash 
 
 
-
 class DatabaseOperations:
     def __init__(self):
         self.con = sqlite3.connect("database.db")
@@ -63,6 +62,7 @@ class DatabaseOperations:
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
         
+
     def NewDeck(self, email, title, front, back):
         try:
             get_userid_query = 'SELECT id FROM users WHERE email = ?'
@@ -70,8 +70,7 @@ class DatabaseOperations:
             result = self.cur.fetchone()
             if not result:
                 return {"Success": False, "Error": "Could not validate user."}
-            user_id = result["id"] 
-            
+            user_id = result["id"]  
             
             query = 'SELECT * FROM decks WHERE owner_id = ? AND title = ?'
             self.cur.execute(query, (user_id, title,))
@@ -88,12 +87,12 @@ class DatabaseOperations:
                 return {"Success": False, "Error": "ERROR (ADD LATER)"}
             deck_id = result["id"]
 
-
             query = 'INSERT INTO cards(deck_id, front, back) VALUES (?, ?, ?)'
             self.cur.execute(query, (deck_id, front, back))
             self.con.commit()
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
+
 
     def GetDecks(self, email):
         try:
@@ -112,6 +111,7 @@ class DatabaseOperations:
         except:
             pass
     
+
     def DeckView(self, email, deck_id):
         try:
             get_userid_query = 'SELECT id FROM users WHERE email = ?'
@@ -140,6 +140,7 @@ class DatabaseOperations:
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
     
+
     def GetCards(self, email, deck_id):
         try:
             get_userid_query = 'SELECT id FROM users WHERE email = ?'
@@ -168,7 +169,45 @@ class DatabaseOperations:
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
 
+
     def EditDeck(self, email, updated_deck, deck_id):
+        try:
+            self.cur.execute('SELECT id FROM users WHERE email = ?', (email,))
+            user = self.cur.fetchone()
+            if not user:
+                return {"Success": False, "Error": "Could not validate user."}
+            title = updated_deck.get("title")
+            if title:
+                self.cur.execute(
+                    "UPDATE decks SET title = ? WHERE id = ?",
+                    (title, deck_id)
+                )
+            fronts = {}
+            backs = {}
+            for k, v in updated_deck.items():
+                if k.startswith("front_new_"):
+                    idx = k.replace("front_new_", "")
+                    fronts[idx] = v
+
+                if k.startswith("back_new_"):
+                    idx = k.replace("back_new_", "")
+                    backs[idx] = v
+            for idx in fronts:
+                if idx in backs:
+                    f = fronts[idx].strip()
+                    b = backs[idx].strip()
+                    if f or b:
+                        self.cur.execute(
+                            "INSERT INTO cards(deck_id, front, back) VALUES (?, ?, ?)",
+                            (deck_id, f, b)
+                        )
+            self.con.commit()
+            return {"Success": True}
+        except Exception as e:
+            return {"Success": False, "Error": str(e)}
+
+
+    def DeleteCard(self, email, deck_id, card_id):
         try:
             query = 'SELECT id FROM users WHERE email = ?'
             self.cur.execute(query, (email,))
@@ -176,35 +215,32 @@ class DatabaseOperations:
             if not result:
                 return {"Success": False, "Error": "Could not validate user."}
             user_id = result["id"]
-           
+            
             result = None
-            query = "SELECT title FROM decks WHERE id = ?"
+            query = "SELECT * FROM decks WHERE id = ?"
             self.cur.execute(query, (deck_id,))
             result = self.cur.fetchone()
             if not result:
-                return {"Success": False, "Error": "Couldn't locate deck"}
-            deck_title = result["title"]
+                return {"Success": False, "Error": "Couldn't locate deck/Couldn't validate ownership of deck"}
+            result = None
+           
+            query = "SELECT COUNT(*) as count FROM cards WHERE deck_id = ?"
+            self.cur.execute(query, (deck_id,))
+            result = self.cur.fetchone()["count"]
+            if result <= 1:
+                return {"Success": False, "Error": "LastCard"}
+            result = None
+            query = "DELETE FROM cards WHERE id = ?"
+            self.cur.execute(query, (card_id,))
+            result = self.cur.rowcount
+            if result > 0:
+                self.con.commit()
+                return {"Success": True}
+            else:
+                return {"Success": False}
+        except Exception as error:
+            return {"Success": False, "Error": error}
 
-            new_title_query = "UPDATE decks SET title = ? WHERE id = ?"
-            new_card_query = "INSERT INTO cards (deck_id, front, back) VALUES (?, ?, ?)"
-            
-            items = list(updated_deck.items())
-            for i, (k, v) in enumerate(items):
-                if k == "title":
-                    if v != deck_title:
-                        if v.replace(" ", "") != "":
-                            self.cur.execute(new_title_query, (v, deck_id))
-                            self.con.commit()            
-                if "front_new" in k:
-                    if i < len(items) - 1:
-                        next_k, next_v = items[i+1]
-                        print(k, next_k)
-                        print(v, next_v)
-                        self.cur.execute(new_card_query, (deck_id, v, next_v))
-                        self.con.commit()
-                        print("Card added")
-        except Exception as e:
-            print(e)
 
 def ComparePassword(hashed_password, password):
     if check_password_hash(hashed_password, password):
@@ -212,4 +248,4 @@ def ComparePassword(hashed_password, password):
     return False
 
 
-db = DatabaseOperations()
+

@@ -28,7 +28,7 @@
         <form method="post">
             <div class="deck_title">
                 <p><label for="deck_name">Deck Name</label></p>
-                <p><input type="text" name="title" placeholder="{{template_deck['deck_title']}}"></p>
+                <p><input type="text" name="title" placeholder="{{template_deck['deck_title']}}" value="{{template_deck['deck_title']}}"></p>
             </div>
             <div class="card">
                 {% for key, list_value in template_deck["cards"].items()%}
@@ -41,9 +41,8 @@
                         <textarea name="front">{{list_value[0]}}</textarea>
                         <textarea name="back">{{list_value[1]}}</textarea>
                     </div>
-                    <button type="button" >Delete Card (id={{key}})</button>
+                    <button type="button" onclick="deleteCard('{{ url_for('delete_card', deck_id=deck_id, card_id=key) }}')">Delete Card</button>
                 {% endfor %}
-               
             </div>
             <button id="new_card" type="button">New Card</button>
             <p><input type="submit" value="Save Changes"></p>
@@ -54,6 +53,7 @@
             <p>{{ messages[0] }}</p>
         {% endif %}
         {% endwith %}
+
 </div>
 <script>
     let new_cards = 1;
@@ -98,5 +98,10 @@
     button.addEventListener("click", function() {
         cardBuilder(card);
     });
+    function deleteCard(url) {
+    fetch(url, { method: "POST" })
+        .then(() => location.reload());
+    }
+
 </script>
 {% endblock %}

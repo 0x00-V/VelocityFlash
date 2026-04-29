@@ -164,12 +164,11 @@ def deck(deck_id):
 
 
 @app.route('/edit_deck/<int:deck_id>', methods=['GET', 'POST'])
-def edit_deck(deck_id):
+def edit_deck(deck_id, error=None):
     if session.get('email') == None:
         return redirect(url_for('login'))
     db = DatabaseOperations()
     deck_content = db.DeckView(session.get('email'), deck_id)
-    print(deck_content)
     if request.method == 'POST':
         for k,v in request.form.items():
             if k == "title":
@@ -180,17 +179,26 @@ def edit_deck(deck_id):
                     print("THROW ERROR HERE (Edit_DECK")
         db.EditDeck(session.get('email'), request.form, deck_id)
         return redirect(url_for('edit_deck', deck_id=deck_id))
-    return render_template('edit_deck_page.html', session=session, template_deck=deck_content)
+    return render_template('edit_deck_page.html', session=session, deck_id=deck_id, template_deck=deck_content)
+
+@app.route('/edit_deck/<int:deck_id>/delete_card/<int:card_id>', methods=['POST'])
+def delete_card(deck_id, card_id):
+    if session.get('email') == None:
+       return redirect(url_for('login'))
+    db = DatabaseOperations()
+    error = None
+    result = db.DeleteCard(session.get('email'), deck_id, card_id)
+    if 'Error' in result:
+        if result["Error"] == "LastCard":
+            error="Deck must have at least 1 card."
+    return redirect(url_for('edit_deck', deck_id=deck_id, error=error))    
 
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=8081)
 
 """
-# TODO
-Tidy this up and tighten logic before continuing
-
-Delete individial cards
-Delete decks
-account page - change email, 
+# TODO:
+# Delete decks
+#account page - change email, 
 """
