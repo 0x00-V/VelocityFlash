@@ -13,7 +13,7 @@ class DatabaseOperations:
     def initDB(self):
         self.cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, email TEXT NOT NULL, password TEXT NOT NULL)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS decks(id INTEGER PRIMARY KEY, owner_id INTEGER, title TEXT UNIQUE NOT NULL, FOREIGN KEY (owner_id) REFERENCES users(id))")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, deck_id INTEGER, front TEXT NOT NULL, back TEXT NOT NULL, FOREIGN KEY (deck_id) REFERENCES decks(id))")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, deck_id INTEGER, front TEXT NOT NULL, back TEXT NOT NULL, FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE)")
         self.con.commit()
 
 
@@ -44,7 +44,18 @@ class DatabaseOperations:
             return {"Success": False, "Error": "Incorrect Credentials."}
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
-        
+       
+    
+    def ValidateSession(self, email):
+        try:
+            query = 'SELECT id FROM users WHERE email = ?'
+            self.cur.execute(query, (email,))
+            result = self.cur.fetchone()
+            if not result:
+                return {"Success": False, "Error": "Could not validate user."}
+            return {"Success": True}
+        except Exception as error:
+            return {"Success": False, "Error": error}
 
     def UpdatePassword(self, email, old_pass, new_pass):
         try:
@@ -241,6 +252,34 @@ class DatabaseOperations:
         except Exception as error:
             return {"Success": False, "Error": error}
 
+    def DeleteDeck(self, email, deck_id):
+        try:
+            query = 'SELECT id FROM users WHERE email = ?'
+            self.cur.execute(query, (email,))
+            result = self.cur.fetchone()
+            if not result:
+                return {"Success": False, "Error": "Could not validate user."}
+            user_id = result["id"]
+            
+            result = None
+            query = "SELECT * FROM decks WHERE id = ?"
+            self.cur.execute(query, (deck_id,))
+            result = self.cur.fetchone()
+            if not result:
+                return {"Success": False, "Error": "Couldn't locate deck/Couldn't validate ownership of deck"}
+            result = None
+            query = "DELETE FROM decks WHERE id = ?"
+            self.cur.execute(query, (deck_id,))
+            result = self.cur.rowcount
+            if result > 0:
+                self.con.commit()
+                return {"Success": True}
+            else:
+                return {"Success": False}
+        except Exception as error:
+            return {"Success": False, "Error": error}
+
+
 
 def ComparePassword(hashed_password, password):
     if check_password_hash(hashed_password, password):
@@ -248,4 +287,6 @@ def ComparePassword(hashed_password, password):
     return False
 
 
-
+# TODO:
+# Currently, I'm not checking the ownership of deck. That would be ideal lol.
+# Increase Security

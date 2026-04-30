@@ -22,14 +22,27 @@ db_Setup = DatabaseOperations()
 db_Setup.initDB()
 
 
+def validateSession(session):
+    if session.get('email') != None:
+        db = DatabaseOperations()
+        response = db.ValidateSession(session.get('email'))
+        if response["Success"] == True:
+            return True
+        else:
+            session.clear()
+    return False
+
+
 @app.route("/")
 def index():
+    if session.get('email'):
+        return redirect(url_for('dashboard'))
     return render_template('index.html', session=session)
 
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
-    if session.get('email') != None:
+    if validateSession(session) == True:
         return redirect(url_for('dashboard'))
     db = DatabaseOperations()
     error = None
@@ -53,7 +66,7 @@ def login():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
-    if session.get('email') != None:
+    if validateSession(session) == True:
         return redirect(url_for('dashboard'))
     db = DatabaseOperations()
     error = None
@@ -85,14 +98,14 @@ def logout():
 
 @app.route("/settings", methods=['GET'])
 def settings():
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     return render_template('settings.html', session=session)
 
 
 @app.route("/settings/update_password", methods=['GET', 'POST'])
 def change_password():
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     error = None
     if request.method == 'POST':
@@ -117,11 +130,14 @@ def change_password():
 
 
 @app.route("/dashboard")
-def dashboard():
-    if session.get('email') == None:
+def dashboard(error=None):
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     db = DatabaseOperations()
     decks = db.GetDecks(session.get('email'))
+    if 'Success' in decks:
+        if decks['Success'] == False:
+            return redirect(url_for('login'))
     for key, value in decks.items():
         print(f"{key} - {value}")
         
@@ -130,7 +146,7 @@ def dashboard():
 
 @app.route('/new_deck', methods=['GET', 'POST'])
 def new_deck():
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     if request.method == 'POST':
         db = DatabaseOperations()
@@ -149,14 +165,14 @@ def new_deck():
 
 @app.route('/decks/<int:deck_id>')    
 def decks(deck_id):
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     return redirect(url_for('dashboard'))
 
 
 @app.route('/deck/<int:deck_id>')
 def deck(deck_id):
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     db = DatabaseOperations()
     cards = db.GetCards(session.get('email'), deck_id)    
@@ -165,7 +181,7 @@ def deck(deck_id):
 
 @app.route('/edit_deck/<int:deck_id>', methods=['GET', 'POST'])
 def edit_deck(deck_id, error=None):
-    if session.get('email') == None:
+    if validateSession(session) == False:
         return redirect(url_for('login'))
     db = DatabaseOperations()
     deck_content = db.DeckView(session.get('email'), deck_id)
@@ -183,22 +199,34 @@ def edit_deck(deck_id, error=None):
 
 @app.route('/edit_deck/<int:deck_id>/delete_card/<int:card_id>', methods=['POST'])
 def delete_card(deck_id, card_id):
-    if session.get('email') == None:
-       return redirect(url_for('login'))
+    if validateSession(session) == False:
+        return redirect(url_for('login'))
     db = DatabaseOperations()
     error = None
     result = db.DeleteCard(session.get('email'), deck_id, card_id)
     if 'Error' in result:
         if result["Error"] == "LastCard":
             error="Deck must have at least 1 card."
-    return redirect(url_for('edit_deck', deck_id=deck_id, error=error))    
+    return redirect(url_for('edit_deck', deck_id=deck_id, error=error))   
+
+@app.route('/dashboard/delete_deck/<int:deck_id>', methods=['POST'])
+def delete_deck(deck_id):
+    if validateSession(session) == False:
+        return redirect(url_for('login'))
+    db = DatabaseOperations()
+    print("Click")
+    error = None
+    result = db.DeleteDeck(session.get('email'), deck_id)
+    print(result)
+    return redirect(url_for('dashboard', error=error))
 
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=8081)
 
-"""
+
 # TODO:
-# Delete decks
-#account page - change email, 
-"""
+# Imrpove and tighten logic
+# Email Account Validation and For Password Resets 
+# Complete DBOps todolist (Kinda important)
+# Improve UX - Deletion Prompts, improved styling
