@@ -2,46 +2,110 @@
 {% block title %}Create{% endblock %}
 {% block content %}
 <style>
+    .dashboard-main {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 16px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    form {
+        width: 100%;
+    }
+    .deck_title {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .deck_title label {
+        display: block;
+        margin-bottom: 8px;
+        opacity: 0.8;
+    }
     .deck_title input {
-        width: 150px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: none;
+        outline: none;
+        background: #1f1f1f;
+        color: white;
+    }
+    .card-block {
+        background: #2a2a2a;
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .card-header {
+        margin-bottom: 10px;
+        opacity: 0.8;
+        font-size: 14px;
     }
     .card_container {
         display: flex;
         gap: 10px;
     }
-    .card_container textarea,p {
-        flex: 1;
-        min-width: 0;
-    }
     .card_container textarea {
-        resize: none; 
-        height: 150px; 
-        width: 300px;
+        flex: 1;
+        min-height: 120px;
+        resize: none;
+        border-radius: 6px;
+        border: none;
+        padding: 10px;
+        outline: none;
+        background: #1f1f1f;
+        color: white;
+    }
+    input[type="submit"] {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #39ffde;
+        color: #111;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    input[type="submit"]:hover {
+        background: #2de0c4;
+    }
+    .error {
+        color: #ff6b6b;
+        margin-top: 10px;
+        text-align: center;
+    }
+    @media (max-width: 600px) {
+        .card_container {
+            flex-direction: column;
+        }
     }
 </style>
 <div class="dashboard-main">
     <form method="post">
         <div class="deck_title">
-             <p><label for="deck_name">Deck Name</label></p>
-             <p><input type="text" name="title" placeholder='e.g. "Computer Science"'><p>
+            <label>Deck Name</label>
+            <input type="text" name="title" placeholder='e.g. "Computer Science"'>
         </div>
-        <div class="new_card">
-            <p>Card 1</p>
+        <div class="card-block">
+            <div class="card-header">Card 1</div>
+
             <div class="card_container">
-                <p>Front</p>
-                <p>Back</p>
+                <textarea name="front" placeholder="Front"></textarea>
+                <textarea name="back" placeholder="Back"></textarea>
             </div>
-            <div class="card_container">
-                <textarea name="front"></textarea>
-                <textarea name="back"></textarea>
-            </div>
-            <p><input type="submit" value="Create Deck"></p>
         </div>
+        <input type="submit" value="Create Deck">
     </form>
-         {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages() %}
         {% if messages %}
-            <p style="color: red;">{{ messages[0] }}</p>
+            <p class="error">{{ messages[0] }}</p>
         {% endif %}
-        {% endwith %}
+    {% endwith %}
 </div>
 {% endblock %}
