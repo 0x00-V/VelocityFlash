@@ -135,13 +135,9 @@ def dashboard(error=None):
         return redirect(url_for('login'))
     db = DatabaseOperations()
     decks = db.GetDecks(session.get('email'))
-    if 'Success' in decks:
-        if decks['Success'] == False:
-            return redirect(url_for('login'))
-    for key, value in decks.items():
-        print(f"{key} - {value}")
-        
-    return render_template('dashboard.html', session=session, template_decks=decks)
+    for row in decks["Decks"]:
+        print(row["id"], row["created_at"], row["title"])
+    return render_template('dashboard.html', session=session, decks=decks)
 
 
 @app.route('/new_deck', methods=['GET', 'POST'])
@@ -197,6 +193,7 @@ def edit_deck(deck_id, error=None):
         return redirect(url_for('edit_deck', deck_id=deck_id))
     return render_template('edit_deck_page.html', session=session, deck_id=deck_id, template_deck=deck_content)
 
+
 @app.route('/edit_deck/<int:deck_id>/delete_card/<int:card_id>', methods=['POST'])
 def delete_card(deck_id, card_id):
     if validateSession(session) == False:
@@ -209,12 +206,12 @@ def delete_card(deck_id, card_id):
             error="Deck must have at least 1 card."
     return redirect(url_for('edit_deck', deck_id=deck_id, error=error))   
 
+
 @app.route('/dashboard/delete_deck/<int:deck_id>', methods=['POST'])
 def delete_deck(deck_id):
     if validateSession(session) == False:
         return redirect(url_for('login'))
     db = DatabaseOperations()
-    print("Click")
     error = None
     result = db.DeleteDeck(session.get('email'), deck_id)
     print(result)
@@ -223,10 +220,3 @@ def delete_deck(deck_id):
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=8081)
-
-
-# TODO:
-# Imrpove and tighten logic
-# Email Account Validation and For Password Resets 
-# Complete DBOps todolist (Kinda important)
-# Improve UX - Deletion Prompts, improved styling

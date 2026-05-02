@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, datetime
 from werkzeug.security import generate_password_hash, check_password_hash 
 
 
@@ -12,7 +12,7 @@ class DatabaseOperations:
     
     def initDB(self):
         self.cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, email TEXT NOT NULL, password TEXT NOT NULL)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS decks(id INTEGER PRIMARY KEY, owner_id INTEGER, title TEXT UNIQUE NOT NULL, FOREIGN KEY (owner_id) REFERENCES users(id))")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS decks(id INTEGER PRIMARY KEY, owner_id INTEGER, created_at TEXT NOT NULL, title TEXT UNIQUE NOT NULL, FOREIGN KEY (owner_id) REFERENCES users(id))")
         self.cur.execute("CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, deck_id INTEGER, front TEXT NOT NULL, back TEXT NOT NULL, FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE)")
         self.con.commit()
 
@@ -89,8 +89,8 @@ class DatabaseOperations:
             if len(result) > 0:
                 return {"Success": False, "Error": "ERROR (ADD LATER)"}
             
-            query = 'INSERT INTO decks(owner_id, title) VALUES (?, ?)'
-            self.cur.execute(query, (user_id, title))
+            query = 'INSERT INTO decks(owner_id, created_at, title) VALUES (?, ?, ?)'
+            self.cur.execute(query, (user_id, datetime.datetime.now(), title))
             get_deck_id = 'SELECT id FROM decks WHERE title = ?'
             self.cur.execute(get_deck_id, (title,))
             result = self.cur.fetchone()
@@ -113,14 +113,12 @@ class DatabaseOperations:
             if not result:
                 return {"Success": False, "Error": "Could not validate user."}
             user_id = result["id"] 
-            query = "SELECT id, title FROM decks WHERE owner_id = ?"
+            query = "SELECT id, strftime('%Y-%m-%d %H:%M:%S', created_at) as created_at, title FROM decks WHERE owner_id = ?"
             self.cur.execute(query, (user_id,))
             result = self.cur.fetchall()
-            if not result:
-                return {}
-            return dict(result) 
-        except:
-            pass
+            return {"Success": True, "Decks": result}
+        except Exception as err:
+            return {"Success": False, "Error": err}
     
 
     def DeckView(self, email, deck_id):
@@ -271,6 +269,7 @@ class DatabaseOperations:
             query = "DELETE FROM decks WHERE id = ?"
             self.cur.execute(query, (deck_id,))
             result = self.cur.rowcount
+            print(result)
             if result > 0:
                 self.con.commit()
                 return {"Success": True}
@@ -285,8 +284,3 @@ def ComparePassword(hashed_password, password):
     if check_password_hash(hashed_password, password):
         return True
     return False
-
-
-# TODO:
-# Currently, I'm not checking the ownership of deck. That would be ideal lol.
-# Increase Security

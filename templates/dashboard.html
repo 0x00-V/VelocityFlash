@@ -8,16 +8,23 @@
 <table>
   <tr>
     <th>Title</th>
-    <th>Edit/Delete</th>
+    <th>Created At</th>
+    <th>Edit</th>
+    <th>Delete</th>
   </tr>
-    {% if template_decks | length < 1 %}
-        <tr><td>You currently have no decks.<td></tr>
+    {% if not decks["Success"] %}
+        <p>{{ decks["Error"] }}</p>
+    {% elif decks["Decks"] | length < 1 %}
+        <tr>
+            <td colspan="4">You currently have no decks.</td>
+        </tr>
     {% else %}
-        {% for key, value in template_decks.items() %}
+        {% for row in decks["Decks"]%}
             <tr>
-                <td><a href="{{url_for('deck', deck_id=key)}}">{{value}}</a></td>
-                <td><a href="{{url_for('edit_deck', deck_id=key)}}">Edit</a><button type="button" onclick="deleteDeck('{{ url_for('delete_deck', deck_id=key) }}')">Delete Card</button>
-</td>
+                <td><a href="{{url_for('deck', deck_id=row['id'])}}">{{row["title"]}}</a></td>
+                <td>{{row["created_at"]}}</td>
+                <td><a href="{{url_for('edit_deck', deck_id=row['id'])}}">Edit</a></td>
+                <td><button type="button" onclick="deleteDeck('{{ url_for('delete_deck', deck_id=row['id']) }}')">Delete Card</button></td>
             </tr>
 
         {% endfor %}
