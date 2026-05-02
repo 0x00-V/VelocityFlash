@@ -13,7 +13,7 @@ class DatabaseOperations:
     def initDB(self):
         self.cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, email TEXT NOT NULL, password TEXT NOT NULL)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS decks(id INTEGER PRIMARY KEY, owner_id INTEGER, created_at TEXT NOT NULL, title TEXT UNIQUE NOT NULL, FOREIGN KEY (owner_id) REFERENCES users(id))")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, deck_id INTEGER, front TEXT NOT NULL, back TEXT NOT NULL, FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS cards(id INTEGER PRIMARY KEY, owner_id INTEGER, deck_id INTEGER, front TEXT NOT NULL, back TEXT NOT NULL, FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE)")
         self.con.commit()
 
 
@@ -98,8 +98,8 @@ class DatabaseOperations:
                 return {"Success": False, "Error": "ERROR (ADD LATER)"}
             deck_id = result["id"]
 
-            query = 'INSERT INTO cards(deck_id, front, back) VALUES (?, ?, ?)'
-            self.cur.execute(query, (deck_id, front, back))
+            query = 'INSERT INTO cards(owner_id, deck_id, front, back) VALUES (?, ?, ?, ?)'
+            self.cur.execute(query, (user_id, deck_id, front, back))
             self.con.commit()
         except sqlite3.OperationalError as error:
             return {"Success": False, "Error": error}
@@ -181,15 +181,17 @@ class DatabaseOperations:
 
     def EditDeck(self, email, updated_deck, deck_id):
         try:
-            self.cur.execute('SELECT id FROM users WHERE email = ?', (email,))
-            user = self.cur.fetchone()
-            if not user:
+            get_userid_query = 'SELECT id FROM users WHERE email = ?'
+            self.cur.execute(get_userid_query, (email,))
+            result = self.cur.fetchone()
+            if not result:
                 return {"Success": False, "Error": "Could not validate user."}
+            user_id = result["id"] 
             title = updated_deck.get("title")
             if title:
                 self.cur.execute(
-                    "UPDATE decks SET title = ? WHERE id = ?",
-                    (title, deck_id)
+                    "UPDATE decks SET title = ? WHERE id = ? and owner_id = ?",
+                    (title, deck_id, user_id,)
                 )
             fronts = {}
             backs = {}
@@ -207,8 +209,8 @@ class DatabaseOperations:
                     b = backs[idx].strip()
                     if f or b:
                         self.cur.execute(
-                            "INSERT INTO cards(deck_id, front, back) VALUES (?, ?, ?)",
-                            (deck_id, f, b)
+                            "INSERT INTO cards(owner_id, deck_id, front, back) VALUES (?, ?, ?, ?)",
+                            (user_id, deck_id, f, b)
                         )
             self.con.commit()
             return {"Success": True}
@@ -226,20 +228,20 @@ class DatabaseOperations:
             user_id = result["id"]
             
             result = None
-            query = "SELECT * FROM decks WHERE id = ?"
-            self.cur.execute(query, (deck_id,))
+            query = "SELECT * FROM decks WHERE id = ? and owner_id = ?"
+            self.cur.execute(query, (deck_id, user_id))
             result = self.cur.fetchone()
             if not result:
                 return {"Success": False, "Error": "Couldn't locate deck/Couldn't validate ownership of deck"}
             result = None
            
-            query = "SELECT COUNT(*) as count FROM cards WHERE deck_id = ?"
-            self.cur.execute(query, (deck_id,))
+            query = "SELECT COUNT(*) as count FROM cards WHERE deck_id = ? and owner_id = ?"
+            self.cur.execute(query, (deck_id, user_id))
             result = self.cur.fetchone()["count"]
             if result <= 1:
                 return {"Success": False, "Error": "LastCard"}
             result = None
-            query = "DELETE FROM cards WHERE id = ?"
+            query = "DELETE FROM cards WHERE id = ? and "
             self.cur.execute(query, (card_id,))
             result = self.cur.rowcount
             if result > 0:
