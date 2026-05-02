@@ -260,14 +260,14 @@ class DatabaseOperations:
             user_id = result["id"]
             
             result = None
-            query = "SELECT * FROM decks WHERE id = ?"
-            self.cur.execute(query, (deck_id,))
+            query = "SELECT * FROM decks WHERE id = ? and owner_id = ?"
+            self.cur.execute(query, (deck_id, user_id))
             result = self.cur.fetchone()
             if not result:
                 return {"Success": False, "Error": "Couldn't locate deck/Couldn't validate ownership of deck"}
             result = None
-            query = "DELETE FROM decks WHERE id = ?"
-            self.cur.execute(query, (deck_id,))
+            query = "DELETE FROM decks WHERE id = ? and owner_id = ?"
+            self.cur.execute(query, (deck_id, user_id,))
             result = self.cur.rowcount
             print(result)
             if result > 0:
