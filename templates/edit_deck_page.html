@@ -2,106 +2,201 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <style>
+    .dashboard-main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 30px 16px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    h1 {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    form {
+        width: 100%;
+        max-width: 800px;
+    }
+    .deck_title {
+        margin-bottom: 25px;
+        text-align: center;
+    }
     .deck_title input {
-        width: 150px;
+        width: 100%;
+        max-width: 300px;
+        padding: 10px;
+        border-radius: 6px;
+        border: none;
+        outline: none;
+    }
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .card-block {
+        background: #2a2a2a;
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .card-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        opacity: 0.8;
     }
     .card_container {
         display: flex;
         gap: 10px;
     }
-    .card_container textarea,p {
-        flex: 1;
-        min-width: 0;
-    }
     .card_container textarea {
-        resize: none; 
-        height: 150px; 
-        width: 300px;
+        flex: 1;
+        min-height: 120px;
+        resize: none;
+        border-radius: 6px;
+        border: none;
+        padding: 10px;
+        outline: none;
+        background: #1f1f1f;
+        color: white;
+    }
+    button, input[type="submit"] {
+        border: none;
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 10px 14px;
+        font-weight: bold;
+    }
+    #new_card {
+        margin-top: 20px;
+        background: #39ffde;
+        color: #111;
+    }
+    #new_card:hover {
+        background: #2de0c4;
+    }
+    .delete-btn {
+        margin-top: 10px;
+        background: #ff4d4d;
+        color: white;
+    }
+    .delete-btn:hover {
+        background: #e03a3a;
+    }
+    input[type="submit"] {
+        margin-top: 25px;
+        width: 100%;
+        background: #39ffde;
+        color: #111;
+    }
+    input[type="submit"]:hover {
+        background: #2de0c4;
+    }
+    .error {
+        color: #ff6b6b;
+        text-align: center;
+    }
+    .flash {
+        text-align: center;
+        margin-top: 10px;
+        color: #00ffcc;
+    }
+    @media (max-width: 600px) {
+        .card_container {
+            flex-direction: column;
+        }
+
+        .card_container textarea {
+            min-height: 100px;
+        }
     }
 </style>
 <div class="dashboard-main">
     {% if not template_deck %}
-        <h1>There was an error retreiving deck information.<h1>
+        <h1>There was an error retrieving deck information.</h1>
         <p>Click <a href="{{url_for('dashboard')}}">here</a> to go back.</p>
     {% else %}
-        <h1>{{template_deck["deck_title"]}}</h1>
+        <h1>{{ template_deck["deck_title"] }}</h1>
         <form method="post">
             <div class="deck_title">
-                <p><label for="deck_name">Deck Name</label></p>
-                <p><input type="text" name="title" placeholder="{{template_deck['deck_title']}}" value="{{template_deck['deck_title']}}"></p>
+                <label>Deck Name</label><br>
+                <input type="text" name="title"
+                       value="{{ template_deck['deck_title'] }}">
             </div>
             <div class="card">
-                {% for key, list_value in template_deck["cards"].items()%}
-                    <input type="hidden" name="card_id" value="{{key}}">         
-                    <div class="card_container">
-                        <p>Front</p>
-                        <p>Back</p>
+                {% for key, list_value in template_deck["cards"].items() %}
+                    <div class="card-block">
+                        <input type="hidden" name="card_id" value="{{ key }}">
+                        <div class="card-labels">
+                            <span>Front</span>
+                            <span>Back</span>
+                        </div>
+                        <div class="card_container">
+                            <textarea name="front">{{ list_value[0] }}</textarea>
+                            <textarea name="back">{{ list_value[1] }}</textarea>
+                        </div>
+                        <button type="button"
+                                class="delete-btn"
+                                onclick="deleteCard('{{ url_for('delete_card', deck_id=deck_id, card_id=key) }}')">
+                            Delete Card
+                        </button>
                     </div>
-                    <div class="card_container">
-                        <textarea name="front">{{list_value[0]}}</textarea>
-                        <textarea name="back">{{list_value[1]}}</textarea>
-                    </div>
-                    <button type="button" onclick="deleteCard('{{ url_for('delete_card', deck_id=deck_id, card_id=key) }}')">Delete Card</button>
                 {% endfor %}
             </div>
-            <button id="new_card" type="button">New Card</button>
-            <p><input type="submit" value="Save Changes"></p>
+            <button id="new_card" type="button">+ New Card</button>
+            <input type="submit" value="Save Changes">
         </form>
     {% endif %}
-         {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages() %}
         {% if messages %}
-            <p>{{ messages[0] }}</p>
+            <p class="flash">{{ messages[0] }}</p>
         {% endif %}
-        {% endwith %}
+    {% endwith %}
 
 </div>
+
 <script>
     let new_cards = 1;
-    function cardBuilder(card){
-        const currentId = `new_card_${new_cards}`;
-        const card_container_1 = document.createElement('div');
-        const card_container_2 = document.createElement('div');
-        card_container_1.setAttribute('class', 'card_container');
-        card_container_1.setAttribute('id', currentId);
-        card_container_2.setAttribute('class', 'card_container');
-        card_container_2.setAttribute('id', currentId);
-        const front = document.createElement('p');
-        front.textContent = "Front";
-        const back = document.createElement('p');
-        back.textContent = "Back";
-        const front_textarea = document.createElement('textarea');
-        front_textarea.setAttribute('name', `front_new_${new_cards}`);
-        const back_textarea = document.createElement('textarea');
-        back_textarea.setAttribute('name', `back_new_${new_cards}`);
-        const delete_btn = document.createElement('button');
-        delete_btn.setAttribute('type', 'button');
-        delete_btn.textContent = "Delete Card";
-        delete_btn.addEventListener("click", function () {
-            const containers = document.querySelectorAll(`[id="${currentId}"]`);
-            containers.forEach(container => {
-                container.innerHTML = '';
-                container.remove();
-            });
-            delete_btn.remove();
-        });
-        new_cards += 1;
-        card_container_1.appendChild(front);
-        card_container_1.appendChild(back);
-        card_container_2.appendChild(front_textarea);
-        card_container_2.appendChild(back_textarea);
-        card.appendChild(card_container_1);
-        card.appendChild(card_container_2);
-        card.appendChild(delete_btn);
+
+    function cardBuilder(card) {
+        const id = `new_card_${new_cards}`;
+        const block = document.createElement('div');
+        block.className = "card-block";
+        const labels = document.createElement('div');
+        labels.className = "card-labels";
+        labels.innerHTML = "<span>Front</span><span>Back</span>";
+        const container = document.createElement('div');
+        container.className = "card_container";
+        const front = document.createElement('textarea');
+        front.name = `front_new_${new_cards}`;
+        const back = document.createElement('textarea');
+        back.name = `back_new_${new_cards}`;
+        container.appendChild(front);
+        container.appendChild(back);
+        const del = document.createElement('button');
+        del.type = "button";
+        del.className = "delete-btn";
+        del.textContent = "Delete Card";
+        del.addEventListener("click", () => block.remove());
+        block.appendChild(labels);
+        block.appendChild(container);
+        block.appendChild(del);
+        card.appendChild(block);
+        new_cards++;
     }
     const button = document.getElementById("new_card");
     const card = document.querySelector(".card");
-    button.addEventListener("click", function() {
+    button.addEventListener("click", () => {
         cardBuilder(card);
     });
     function deleteCard(url) {
-    fetch(url, { method: "POST" })
-        .then(() => location.reload());
+        fetch(url, { method: "POST" }).then(() => location.reload());
     }
-
 </script>
+
 {% endblock %}

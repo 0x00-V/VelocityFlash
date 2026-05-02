@@ -1,8 +1,131 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<div>
-    <h1>Home Page</h1>
-    <p>Blah.....</p>
+
+<style>
+    .hero {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 80px 20px;
+        text-align: center;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .brand {
+        font-size: 48px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+    .tagline {
+        font-size: 18px;
+        opacity: 0.8;
+        max-width: 600px;
+        margin-bottom: 30px;
+        line-height: 1.5;
+    }
+    .cta-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .btn {
+        padding: 12px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: 0.2s;
+        display: inline-block;
+    }
+    .btn-primary {
+        background: #39ffde;
+        color: #111;
+    }
+    .btn-primary:hover {
+        background: #2de0c4;
+    }
+    .btn-secondary {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+    }
+    .btn-secondary:hover {
+        border-color: #39ffde;
+        color: #39ffde;
+    }
+    .features {
+        max-width: 900px;
+        margin: 60px auto;
+        padding: 0 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        color: white;
+    }
+    .feature {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: left;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .feature h3 {
+        margin-bottom: 8px;
+        font-size: 16px;
+        color: #39ffde;
+    }
+    .feature p {
+        font-size: 14px;
+        opacity: 0.8;
+        line-height: 1.4;
+    }
+    .footer-note {
+        text-align: center;
+        margin: 60px 0 20px;
+        font-size: 12px;
+        opacity: 0.5;
+        color: white;
+    }
+    @media (max-width: 600px) {
+        .brand {
+            font-size: 36px;
+        }
+
+        .tagline {
+            font-size: 16px;
+        }
+    }
+</style>
+<div class="hero">
+    <div class="brand">VelocityFlash</div>
+    <div class="tagline">
+        Learn faster, remember longer.  
+        Build flashcard decks, study efficiently, and track your progress with a clean, distraction-free system.
+    </div>
+    <div class="cta-buttons">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
+    </div>
+</div>
+<div class="features">
+    <div class="feature">
+        <h3>⚡ Fast Learning</h3>
+        <p>Create flashcards in seconds and start studying immediately.</p>
+    </div>
+    <div class="feature">
+        <h3>🧠 Active Recall</h3>
+        <p>Flip cards and test yourself instead of passive reading.</p>
+    </div>
+    <div class="feature">
+        <h3>📚 Organized Decks</h3>
+        <p>Keep subjects separated and structured for better retention.</p>
+    </div>
+    <div class="feature">
+        <h3>📱 Responsive</h3>
+        <p>Study on desktop or mobile with a fully responsive interface.</p>
+    </div>
 </div>
 {% endblock %}
